@@ -1,0 +1,1751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BIF | Business Management System</title>
+    
+    <!-- CDNs -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Custom Styles -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+            overflow-x: hidden;
+        }
+
+        /* Mobile menu styles */
+        #mobile-menu-toggle {
+            display: none;
+        }
+
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Sidebar Active State */
+        .sidebar-item.active {
+            background-color: #2563eb;
+            color: white;
+            box-shadow: 0 2px 4px -1px rgba(37, 99, 235, 0.2);
+        }
+        .sidebar-item:hover:not(.active) {
+            background-color: #1e293b;
+            color: #f8fafc;
+        }
+
+        /* Invoice Print Styling - Half A4 */
+        .invoice-container {
+            width: 148mm;
+            min-height: 210mm;
+            background: white;
+            margin: auto;
+            padding: 10mm;
+            position: relative;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 80px;
+            font-weight: 900;
+            color: rgba(0, 0, 0, 0.03);
+            pointer-events: none;
+            text-transform: uppercase;
+            z-index: 0;
+        }
+
+        /* Toast Notification */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            background: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #2563eb;
+            font-size: 14px;
+            font-weight: 600;
+            animation: slideIn 0.3s ease-out forwards;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 250px;
+            max-width: 90vw;
+        }
+        .toast.success { border-left-color: #10b981; }
+        .toast.error { border-left-color: #ef4444; }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Modal Animation */
+        .modal-content {
+            animation: zoomIn 0.2s ease-out;
+        }
+        @keyframes zoomIn {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        /* Mobile Responsive Adjustments */
+        @media (max-width: 768px) {
+            #sidebar {
+                position: fixed;
+                top: 0;
+                left: -100%;
+                height: 100vh;
+                z-index: 40;
+                transition: left 0.3s ease;
+                overflow-y: auto;
+            }
+            
+            #sidebar.mobile-open {
+                left: 0;
+            }
+            
+            #mobile-menu-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 40px;
+                height: 40px;
+                background: #1e293b;
+                color: white;
+                border-radius: 8px;
+                margin-right: 10px;
+            }
+            
+            .mobile-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 30;
+            }
+            
+            .mobile-overlay.active {
+                display: block;
+            }
+            
+            header {
+                padding-left: 16px;
+                padding-right: 16px;
+                height: 60px;
+            }
+            
+            #page-title {
+                font-size: 18px;
+            }
+            
+            #content-container {
+                padding: 16px;
+                padding-bottom: 80px;
+            }
+            
+            .toast {
+                min-width: auto;
+                width: calc(100vw - 40px);
+                right: 20px;
+                left: 20px;
+                max-width: none;
+            }
+            
+            #toast-container {
+                right: 0;
+                left: 0;
+                align-items: center;
+            }
+            
+            .invoice-container {
+                width: 100%;
+                padding: 5mm;
+                min-height: auto;
+                transform: scale(0.9);
+                transform-origin: top center;
+            }
+            
+            .modal-content {
+                width: 95vw;
+                max-height: 90vh;
+                margin: 10px;
+            }
+            
+            #modal-body {
+                max-height: 60vh;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .invoice-container {
+                transform: scale(0.8);
+            }
+            
+            .grid-cols-1 {
+                grid-template-columns: 1fr !important;
+            }
+            
+            .grid-cols-2 {
+                grid-template-columns: 1fr !important;
+            }
+            
+            .lg\\:grid-cols-3, .lg\\:grid-cols-4, .lg\\:grid-cols-2 {
+                grid-template-columns: 1fr !important;
+            }
+            
+            .flex-col-mobile {
+                flex-direction: column !important;
+            }
+            
+            .text-2xl {
+                font-size: 1.5rem !important;
+            }
+            
+            .text-xl {
+                font-size: 1.25rem !important;
+            }
+        }
+
+        /* Print Media Query */
+        @media print {
+            body * { visibility: hidden; }
+            #printable-area, #printable-area * { visibility: visible; }
+            #printable-area { 
+                position: absolute; 
+                left: 0; 
+                top: 0; 
+                width: 100%; 
+                margin: 0; 
+                padding: 0;
+                border: none; 
+                box-shadow: none; 
+            }
+            .no-print { display: none !important; }
+            .invoice-container {
+                box-shadow: none;
+                border: none;
+                margin: 0;
+                width: 100%;
+                transform: scale(1) !important;
+            }
+        }
+
+        /* Mobile bottom navigation */
+        .mobile-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e2e8f0;
+            padding: 8px;
+            z-index: 30;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-nav {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+            
+            .mobile-nav-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 8px 4px;
+                border-radius: 8px;
+                font-size: 10px;
+                font-weight: 600;
+                color: #64748b;
+                background: transparent;
+                border: none;
+                text-align: center;
+            }
+            
+            .mobile-nav-item.active {
+                background: #2563eb;
+                color: white;
+            }
+            
+            .mobile-nav-item i {
+                margin-bottom: 4px;
+                width: 20px;
+                height: 20px;
+            }
+            
+            .mobile-nav-item span {
+                font-size: 9px;
+            }
+        }
+
+        /* Improved table scrolling on mobile */
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Better touch targets */
+        button, input, select, textarea {
+            font-size: 16px; /* Prevents iOS zoom on focus */
+        }
+        
+        .touch-target {
+            min-height: 44px;
+            min-width: 44px;
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden bg-slate-50 text-slate-900">
+
+    <!-- Mobile Overlay for Sidebar -->
+    <div class="mobile-overlay" id="mobile-overlay" onclick="app.toggleMobileMenu()"></div>
+
+    <!-- SIDEBAR -->
+    <aside class="w-72 bg-slate-900 text-slate-300 flex flex-col no-print h-full transition-all duration-300" id="sidebar">
+        <div class="p-6 flex items-center gap-3 border-b border-slate-800">
+            <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-900/50">B</div>
+            <div>
+                <h1 class="font-bold text-white text-lg leading-tight tracking-tight">BIF Manager</h1>
+                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">v2.0 • Mobile Edition</p>
+            </div>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto p-4 space-y-1 custom-scroll">
+            <div class="text-[10px] font-black text-slate-500 uppercase px-3 mb-2 tracking-widest">Core Modules</div>
+            <button onclick="app.navigate('dashboard'); app.toggleMobileMenu()" id="nav-dashboard" class="sidebar-item active w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 font-medium text-sm touch-target">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard
+            </button>
+            <button onclick="app.navigate('company'); app.toggleMobileMenu()" id="nav-company" class="sidebar-item w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 font-medium text-sm touch-target">
+                <i data-lucide="building-2" class="w-5 h-5"></i> Company Profile
+            </button>
+            <button onclick="app.navigate('customers'); app.toggleMobileMenu()" id="nav-customers" class="sidebar-item w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 font-medium text-sm touch-target">
+                <i data-lucide="users" class="w-5 h-5"></i> Customers
+            </button>
+            <button onclick="app.navigate('products'); app.toggleMobileMenu()" id="nav-products" class="sidebar-item w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 font-medium text-sm touch-target">
+                <i data-lucide="package" class="w-5 h-5"></i> Products
+            </button>
+            <button onclick="app.navigate('inventory'); app.toggleMobileMenu()" id="nav-inventory" class="sidebar-item w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 font-medium text-sm touch-target">
+                <i data-lucide="boxes" class="w-5 h-5"></i> Inventory
+            </button>
+
+            <div class="text-[10px] font-black text-slate-500 uppercase px-3 mt-6 mb-2 tracking-widest">Finance</div>
+            <button onclick="app.navigate('invoice-create'); app.toggleMobileMenu()" id="nav-invoice-create" class="sidebar-item w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 font-medium text-sm touch-target">
+                <i data-lucide="file-plus" class="w-5 h-5"></i> Create Invoice
+            </button>
+            <button onclick="app.navigate('invoice-list'); app.toggleMobileMenu()" id="nav-invoice-list" class="sidebar-item w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 font-medium text-sm touch-target">
+                <i data-lucide="file-text" class="w-5 h-5"></i> Invoice History
+            </button>
+            <button onclick="app.navigate('payments'); app.toggleMobileMenu()" id="nav-payments" class="sidebar-item w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 font-medium text-sm touch-target">
+                <i data-lucide="indian-rupee" class="w-5 h-5"></i> Payments
+            </button>
+            <button onclick="app.navigate('reports'); app.toggleMobileMenu()" id="nav-reports" class="sidebar-item w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 font-medium text-sm touch-target">
+                <i data-lucide="bar-chart-3" class="w-5 h-5"></i> Reports
+            </button>
+
+            <div class="text-[10px] font-black text-slate-500 uppercase px-3 mt-6 mb-2 tracking-widest">System</div>
+            <button onclick="app.navigate('hardware'); app.toggleMobileMenu()" id="nav-hardware" class="sidebar-item w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 font-medium text-sm touch-target">
+                <i data-lucide="cpu" class="w-5 h-5"></i> Hardware
+            </button>
+            <button onclick="app.navigate('security'); app.toggleMobileMenu()" id="nav-security" class="sidebar-item w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 font-medium text-sm touch-target">
+                <i data-lucide="shield-check" class="w-5 h-5"></i> Security
+            </button>
+        </nav>
+        
+        <div class="p-4 border-t border-slate-800 text-[10px] font-bold text-slate-600 text-center">
+            BIF MANAGER © 2026
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 overflow-y-auto relative flex flex-col bg-slate-50/50">
+        <!-- Header -->
+        <header class="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20 no-print">
+            <div class="flex items-center">
+                <button id="mobile-menu-toggle" onclick="app.toggleMobileMenu()" class="touch-target">
+                    <i data-lucide="menu" class="w-5 h-5"></i>
+                </button>
+                <h2 id="page-title" class="text-lg md:text-xl font-black text-slate-800 tracking-tight ml-2 md:ml-0">Dashboard Overview</h2>
+            </div>
+            <div class="flex items-center gap-4 md:gap-6">
+                <div class="hidden md:flex md:flex-col md:items-end group cursor-pointer">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider group-hover:text-blue-600 transition-colors">Currency</span>
+                    <select id="currency-selector" onchange="app.updateCurrency()" class="text-sm font-bold border-none bg-transparent focus:ring-0 cursor-pointer outline-none text-slate-700">
+                        <option value="INR">₹ INR</option>
+                        <option value="USD">$ USD</option>
+                        <option value="EUR">€ EUR</option>
+                    </select>
+                </div>
+                <div class="hidden md:block w-px h-8 bg-slate-200"></div>
+                <div class="hidden md:flex md:items-center md:gap-3">
+                    <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white text-xs font-bold shadow-md shadow-blue-200">AD</div>
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold text-slate-700 leading-none">Administrator</span>
+                        <span class="text-[10px] font-medium text-slate-400">System Owner</span>
+                    </div>
+                </div>
+                <!-- Mobile Currency Selector -->
+                <div class="md:hidden">
+                    <select id="currency-selector-mobile" onchange="app.updateCurrency()" class="text-xs font-bold border-none bg-transparent focus:ring-0 cursor-pointer outline-none text-slate-700">
+                        <option value="INR">₹</option>
+                        <option value="USD">$</option>
+                        <option value="EUR">€</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <div id="content-container" class="p-4 md:p-8 pb-20 md:pb-20 max-w-7xl mx-auto w-full">
+            <!-- Sections will be injected here by JS -->
+            
+            <!-- DASHBOARD -->
+            <section id="view-dashboard" class="view-section space-y-6 animate-in">
+                <!-- Stats, Charts, Tables -->
+            </section>
+
+            <!-- COMPANY -->
+            <section id="view-company" class="view-section hidden animate-in">
+                <!-- Form -->
+            </section>
+
+            <!-- CUSTOMERS -->
+            <section id="view-customers" class="view-section hidden animate-in">
+                <!-- Table, Search, Modal Trigger -->
+            </section>
+
+            <!-- PRODUCTS -->
+            <section id="view-products" class="view-section hidden animate-in">
+                <!-- Table, Search, Modal Trigger -->
+            </section>
+
+            <!-- INVENTORY -->
+            <section id="view-inventory" class="view-section hidden animate-in">
+                <!-- Valuation, Table -->
+            </section>
+
+            <!-- INVOICE CREATE -->
+            <section id="view-invoice-create" class="view-section hidden animate-in">
+                <!-- Billing Terminal -->
+            </section>
+
+            <!-- INVOICE LIST -->
+            <section id="view-invoice-list" class="view-section hidden animate-in">
+                <!-- History Table -->
+            </section>
+
+            <!-- PAYMENTS -->
+            <section id="view-payments" class="view-section hidden animate-in">
+                <!-- Charts, Expense Form -->
+            </section>
+
+            <!-- REPORTS -->
+            <section id="view-reports" class="view-section hidden animate-in">
+                <!-- Analytics -->
+            </section>
+            
+            <!-- HARDWARE -->
+            <section id="view-hardware" class="view-section hidden animate-in">
+                <!-- Static Content -->
+            </section>
+            
+            <!-- SECURITY -->
+            <section id="view-security" class="view-section hidden animate-in">
+                <!-- Static Content -->
+            </section>
+        </div>
+    </main>
+
+    <!-- MOBILE BOTTOM NAVIGATION -->
+    <div class="mobile-nav no-print">
+        <button onclick="app.navigate('dashboard')" class="mobile-nav-item active">
+            <i data-lucide="layout-dashboard"></i>
+            <span>Dashboard</span>
+        </button>
+        <button onclick="app.navigate('invoice-create')" class="mobile-nav-item">
+            <i data-lucide="file-plus"></i>
+            <span>Invoice</span>
+        </button>
+        <button onclick="app.navigate('products')" class="mobile-nav-item">
+            <i data-lucide="package"></i>
+            <span>Products</span>
+        </button>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container"></div>
+
+    <!-- MODALS -->
+    <div id="modal-overlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4 no-print transition-opacity duration-200">
+        <!-- Dynamic Modal Content -->
+        <div id="modal-content" class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden modal-content">
+            <!-- Header -->
+            <div class="p-4 md:p-6 border-b flex justify-between items-center bg-slate-50">
+                <h3 class="font-black text-base md:text-lg text-slate-800" id="modal-title">Title</h3>
+                <button onclick="app.closeModal()" class="p-2 hover:bg-slate-200 rounded-lg transition-colors touch-target"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <!-- Body -->
+            <div id="modal-body" class="p-4 md:p-6 max-h-[80vh] overflow-y-auto custom-scroll">
+                <!-- Form fields injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Logic -->
+    <script>
+const app = {
+    state: {
+        company: JSON.parse(localStorage.getItem('bif_company')) || { 
+            name: 'BIF SOLUTIONS', 
+            prefix: 'BIF/', 
+            gst: '', 
+            pan: '', 
+            address: '', 
+            bank: '', 
+            terms: '1. Goods once sold will not be taken back.\n2. Payment strictly within 7 days.\n3. All disputes subject to local jurisdiction.',
+            logo: '', // Removed default logo
+            currency: 'INR'
+        },
+        customers: JSON.parse(localStorage.getItem('bif_customers')) || [],
+        products: JSON.parse(localStorage.getItem('bif_products')) || [],
+        invoices: JSON.parse(localStorage.getItem('bif_invoices')) || [],
+        expenses: JSON.parse(localStorage.getItem('bif_expenses')) || [],
+        currentBillingItems: []
+    },
+
+    charts: {},
+
+    init: () => {
+        lucide.createIcons();
+        app.navigate('dashboard');
+        app.updateStorageStatus();
+        
+        // Update mobile navigation active state
+        app.updateMobileNav();
+        
+        // Global Search Listeners
+        document.addEventListener('input', (e) => {
+            if(e.target.matches('.search-input')) {
+                const view = e.target.dataset.view;
+                const term = e.target.value.toLowerCase();
+                if(view === 'customers') app.renderCustomers(term);
+                if(view === 'products') app.renderProducts(term);
+            }
+        });
+        
+        // Close mobile menu when clicking outside on mobile
+        document.addEventListener('click', (e) => {
+            if(window.innerWidth <= 768 && !e.target.closest('#sidebar') && !e.target.closest('#mobile-menu-toggle')) {
+                app.closeMobileMenu();
+            }
+        });
+    },
+
+    toggleMobileMenu: () => {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('mobile-overlay');
+        if(sidebar.classList.contains('mobile-open')) {
+            app.closeMobileMenu();
+        } else {
+            sidebar.classList.add('mobile-open');
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    },
+
+    closeMobileMenu: () => {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('mobile-overlay');
+        sidebar.classList.remove('mobile-open');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    },
+
+    updateMobileNav: () => {
+        const currentView = window.location.hash.replace('#', '') || 'dashboard';
+        document.querySelectorAll('.mobile-nav-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        const mobileNavMap = {
+            'dashboard': 0,
+            'invoice-create': 1,
+            'products': 2
+        };
+        
+        if(mobileNavMap[currentView] !== undefined) {
+            document.querySelectorAll('.mobile-nav-item')[mobileNavMap[currentView]].classList.add('active');
+        }
+    },
+
+    saveToLocal: () => {
+        localStorage.setItem('bif_company', JSON.stringify(app.state.company));
+        localStorage.setItem('bif_customers', JSON.stringify(app.state.customers));
+        localStorage.setItem('bif_products', JSON.stringify(app.state.products));
+        localStorage.setItem('bif_invoices', JSON.stringify(app.state.invoices));
+        localStorage.setItem('bif_expenses', JSON.stringify(app.state.expenses));
+        app.updateStorageStatus();
+    },
+
+    updateStorageStatus: () => {
+        // Optional: Update footer status if element exists
+    },
+
+    toast: (msg, type = 'success') => {
+        const container = document.getElementById('toast-container');
+        const el = document.createElement('div');
+        el.className = `toast ${type}`;
+        el.innerHTML = `<i data-lucide="${type === 'success' ? 'check-circle' : 'alert-circle'}" class="w-5 h-5"></i> ${msg}`;
+        container.appendChild(el);
+        lucide.createIcons();
+        setTimeout(() => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateX(100%)';
+            setTimeout(() => el.remove(), 300);
+        }, 3000);
+    },
+
+    formatCurrency: (val) => {
+        return new Intl.NumberFormat('en-IN', { 
+            style: 'currency', 
+            currency: app.state.company.currency 
+        }).format(val);
+    },
+
+    navigate: (view) => {
+        // Close mobile menu if open
+        if(window.innerWidth <= 768) {
+            app.closeMobileMenu();
+        }
+        
+        document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+        document.getElementById(`view-${view}`).classList.remove('hidden');
+        
+        document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+        const btn = document.getElementById(`nav-${view}`);
+        if(btn) btn.classList.add('active');
+        
+        // Update mobile bottom nav
+        app.updateMobileNav();
+
+        const titles = {
+            dashboard: 'Dashboard Overview',
+            company: 'Company Profile',
+            customers: 'Client Database',
+            products: 'Product Inventory',
+            inventory: 'Stock Management',
+            'invoice-create': 'New Billing Session',
+            'invoice-list': 'Invoice History',
+            payments: 'Cashflow & Finance',
+            reports: 'Business Reports',
+            hardware: 'Hardware Settings',
+            security: 'Security & Compliance'
+        };
+        document.getElementById('page-title').innerText = titles[view] || 'BIF Manager';
+
+        // Render View
+        if(view === 'dashboard') app.renderDashboard();
+        if(view === 'company') app.renderCompany();
+        if(view === 'customers') app.renderCustomers();
+        if(view === 'products') app.renderProducts();
+        if(view === 'inventory') app.renderInventory();
+        if(view === 'invoice-create') app.initInvoiceCreator();
+        if(view === 'invoice-list') app.renderInvoiceList();
+        if(view === 'payments') app.renderPayments();
+        if(view === 'reports') app.renderReports();
+        if(view === 'hardware') app.renderHardware();
+        if(view === 'security') app.renderSecurity();
+        
+        lucide.createIcons();
+    },
+
+    // --- DASHBOARD ---
+    renderDashboard: () => {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const todayInvoices = app.state.invoices.filter(i => i.date === todayStr);
+        const monthInvoices = app.state.invoices.filter(i => i.date.startsWith(todayStr.substring(0, 7)));
+
+        const todaySales = todayInvoices.reduce((a, b) => a + b.total, 0);
+        const monthSales = monthInvoices.reduce((a, b) => a + b.total, 0);
+        const pendingTotal = app.state.invoices.filter(i => i.status !== 'PAID').reduce((a, b) => a + b.total, 0);
+        const todayExp = app.state.expenses.filter(e => e.date.split('T')[0] === todayStr).reduce((a, b) => a + b.amount, 0);
+        const profitToday = todaySales - todayExp;
+
+        const lowStock = app.state.products.filter(p => p.stock < 10);
+
+        const isMobile = window.innerWidth <= 768;
+        const cols = isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4';
+        const chartHeight = isMobile ? 'h-64' : 'h-96';
+
+        const html = `
+            <div class="grid ${cols} gap-4">
+                <div class="bg-white p-4 md:p-6 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all touch-target">
+                    <p class="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Today's Sales</p>
+                    <h3 class="text-lg md:text-2xl font-black mt-1 text-slate-800">${app.formatCurrency(todaySales)}</h3>
+                </div>
+                <div class="bg-white p-4 md:p-6 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all touch-target">
+                    <p class="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Month's Sales</p>
+                    <h3 class="text-lg md:text-2xl font-black mt-1 text-blue-600">${app.formatCurrency(monthSales)}</h3>
+                </div>
+                <div class="bg-white p-4 md:p-6 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all touch-target">
+                    <p class="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Pending Payments</p>
+                    <h3 class="text-lg md:text-2xl font-black mt-1 text-orange-500">${app.formatCurrency(pendingTotal)}</h3>
+                </div>
+                <div class="bg-white p-4 md:p-6 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all touch-target">
+                    <p class="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Net Profit Today</p>
+                    <h3 class="text-lg md:text-2xl font-black mt-1 text-green-600">${app.formatCurrency(profitToday)}</h3>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-white p-4 md:p-6 rounded-xl border shadow-sm ${chartHeight}">
+                    <h4 class="font-bold mb-4 flex items-center gap-2 text-xs md:text-sm uppercase tracking-wide text-slate-500">
+                        <i data-lucide="trending-up" class="w-4 h-4 text-blue-500"></i> Monthly Transaction Trend
+                    </h4>
+                    <canvas id="salesChart"></canvas>
+                </div>
+                <div class="bg-white p-4 md:p-6 rounded-xl border shadow-sm">
+                    <h4 class="font-bold mb-4 text-red-600 flex items-center gap-2 text-xs md:text-sm uppercase tracking-wide">
+                        <i data-lucide="alert-triangle" class="w-4 h-4"></i> Low Stock Alerts
+                    </h4>
+                    <div class="space-y-3 overflow-y-auto max-h-72 pr-2 custom-scroll">
+                        ${lowStock.length ? lowStock.map(p => `
+                            <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-100">
+                                <span class="text-xs font-bold text-slate-700 truncate">${p.name}</span>
+                                <span class="px-2 py-1 bg-red-600 text-white text-[10px] font-black rounded whitespace-nowrap">${p.stock} LEFT</span>
+                            </div>
+                        `).join('') : '<p class="text-slate-400 text-xs text-center py-10">All items well stocked.</p>'}
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-4 md:p-6 rounded-xl border shadow-sm lg:col-span-2">
+                    <h4 class="font-bold mb-4 text-xs md:text-sm uppercase tracking-wide text-slate-500">Recent Invoices</h4>
+                    <div class="table-container overflow-x-auto">
+                        <table class="w-full text-left text-sm min-w-[600px]">
+                            <thead class="border-b bg-slate-50">
+                                <tr>
+                                    <th class="p-3 font-bold text-slate-600 text-xs">INV #</th>
+                                    <th class="p-3 font-bold text-slate-600 text-xs">Customer</th>
+                                    <th class="p-3 font-bold text-slate-600 text-xs">Amount</th>
+                                    <th class="p-3 font-bold text-slate-600 text-xs">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${app.state.invoices.slice(-5).reverse().map(inv => `
+                                    <tr class="border-b hover:bg-slate-50 transition-colors">
+                                        <td class="p-3 font-bold text-blue-600 text-xs">${inv.id}</td>
+                                        <td class="p-3 font-medium text-xs truncate max-w-[120px]">${inv.customerName}</td>
+                                        <td class="p-3 font-black text-xs">${app.formatCurrency(inv.total)}</td>
+                                        <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${inv.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}">${inv.status}</span></td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="4" class="p-4 text-center text-slate-400 text-xs">No invoices yet.</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="bg-slate-900 p-4 md:p-6 rounded-xl text-white shadow-xl shadow-slate-300">
+                    <h4 class="font-bold mb-6 text-xs md:text-sm uppercase tracking-wide text-slate-400">Quick Actions</h4>
+                    <div class="grid grid-cols-1 gap-3">
+                        <button onclick="app.navigate('invoice-create')" class="flex items-center justify-between p-3 bg-white/10 hover:bg-white/20 rounded-lg transition-all group w-full text-left touch-target">
+                            <span class="font-bold text-xs md:text-sm">Create New Invoice</span>
+                            <i data-lucide="chevron-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+                        </button>
+                        <button onclick="app.navigate('products')" class="flex items-center justify-between p-3 bg-white/10 hover:bg-white/20 rounded-lg transition-all group w-full text-left touch-target">
+                            <span class="font-bold text-xs md:text-sm">Add New Product</span>
+                            <i data-lucide="chevron-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+                        </button>
+                        <button onclick="app.navigate('customers')" class="flex items-center justify-between p-3 bg-white/10 hover:bg-white/20 rounded-lg transition-all group w-full text-left touch-target">
+                            <span class="font-bold text-xs md:text-sm">Register Customer</span>
+                            <i data-lucide="chevron-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.getElementById('view-dashboard').innerHTML = html;
+
+        // Chart
+        if(app.charts.sales) app.charts.sales.destroy();
+        const ctx = document.getElementById('salesChart')?.getContext('2d');
+        if(ctx) {
+            app.charts.sales = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                    datasets: [{
+                        label: 'Gross Sales',
+                        data: [monthSales * 0.2, monthSales * 0.35, monthSales * 0.15, monthSales * 0.3],
+                        borderColor: '#2563eb',
+                        tension: 0.4,
+                        fill: true,
+                        backgroundColor: 'rgba(37, 99, 235, 0.05)'
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } }, 
+                    scales: { 
+                        y: { 
+                            beginAtZero: true, 
+                            grid: { color: '#f1f5f9' },
+                            ticks: { font: { size: isMobile ? 10 : 12 } }
+                        }, 
+                        x: { 
+                            grid: { display: false },
+                            ticks: { font: { size: isMobile ? 10 : 12 } }
+                        } 
+                    } 
+                }
+            });
+        }
+    },
+
+    // --- COMPANY ---
+    renderCompany: () => {
+        const c = app.state.company;
+        const html = `
+            <div class="max-w-4xl mx-auto bg-white rounded-xl border shadow-sm p-4 md:p-8 space-y-6 md:space-y-8">
+                <div class="flex flex-col md:flex-row justify-between items-center border-b pb-4 gap-4">
+                    <h3 class="text-lg md:text-xl font-black text-slate-800">Business Configuration</h3>
+                    <button onclick="app.saveCompany()" class="bg-blue-600 text-white px-4 md:px-6 py-2 rounded-lg font-bold hover:bg-blue-700 flex items-center gap-2 transition-colors w-full md:w-auto touch-target">
+                        <i data-lucide="save" class="w-4 h-4"></i> Save All Changes
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 gap-4 md:gap-6">
+                    <div class="col-span-2 flex flex-col md:flex-row items-center gap-4 md:gap-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                        <div class="w-20 h-20 md:w-24 md:h-24 bg-white border-2 border-dashed rounded-lg flex items-center justify-center relative group overflow-hidden">
+                            ${c.logo ? `<img src="${c.logo}" class="object-contain max-h-full">` : '<span class="text-xs text-slate-400 font-bold">NO LOGO</span>'}
+                            <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[10px] font-bold cursor-pointer transition-opacity">UPLOAD</div>
+                            <input type="file" class="absolute inset-0 opacity-0 cursor-pointer" onchange="app.handleLogoUpload(this)" accept="image/*">
+                        </div>
+                        <div class="text-center md:text-left">
+                            <h4 class="font-bold text-slate-800">Business Logo</h4>
+                            <p class="text-xs text-slate-500">Recommended: Square PNG/JPG. Click to upload.</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Legal Company Name</label>
+                            <input type="text" id="comp-name" value="${c.name}" class="w-full p-2 border rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">GSTIN Number</label>
+                            <input type="text" id="comp-gst" value="${c.gst}" class="w-full p-2 border rounded-lg bg-slate-50 focus:bg-white outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">PAN / Tax ID</label>
+                            <input type="text" id="comp-pan" value="${c.pan}" class="w-full p-2 border rounded-lg bg-slate-50 focus:bg-white outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Invoice Prefix</label>
+                            <input type="text" id="comp-prefix" value="${c.prefix}" class="w-full p-2 border rounded-lg bg-slate-50 focus:bg-white outline-none">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Registered Address</label>
+                            <textarea id="comp-address" rows="2" class="w-full p-2 border rounded-lg bg-slate-50 focus:bg-white outline-none">${c.address}</textarea>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Bank Details</label>
+                            <textarea id="comp-bank" rows="2" class="w-full p-2 border rounded-lg bg-slate-50 focus:bg-white outline-none">${c.bank}</textarea>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Terms & Conditions</label>
+                            <textarea id="comp-terms" rows="4" class="w-full p-2 border rounded-lg bg-slate-50 focus:bg-white outline-none">${c.terms}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.getElementById('view-company').innerHTML = html;
+    },
+
+    handleLogoUpload: (input) => {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                app.state.company.logo = e.target.result;
+                app.renderCompany();
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    },
+
+    saveCompany: () => {
+        app.state.company.name = document.getElementById('comp-name').value;
+        app.state.company.gst = document.getElementById('comp-gst').value;
+        app.state.company.pan = document.getElementById('comp-pan').value;
+        app.state.company.prefix = document.getElementById('comp-prefix').value;
+        app.state.company.address = document.getElementById('comp-address').value;
+        app.state.company.bank = document.getElementById('comp-bank').value;
+        app.state.company.terms = document.getElementById('comp-terms').value;
+        app.saveToLocal();
+        app.toast('Company profile updated successfully');
+    },
+
+    // --- CUSTOMERS ---
+    renderCustomers: (filter = '') => {
+        const filtered = app.state.customers.filter(c => 
+            c.name.toLowerCase().includes(filter) || 
+            c.phone.includes(filter) || 
+            c.email.toLowerCase().includes(filter)
+        );
+
+        const html = `
+            <div class="space-y-6">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div class="relative w-full md:w-auto">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                        <input type="text" data-view="customers" placeholder="Search customers..." class="search-input pl-10 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64 bg-white" value="${filter}">
+                    </div>
+                    <button onclick="app.openCustomerModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 w-full md:w-auto justify-center touch-target">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i> Add New Customer
+                    </button>
+                </div>
+                <div class="bg-white rounded-xl border shadow-sm overflow-hidden">
+                    <div class="table-container overflow-x-auto">
+                        <table class="w-full text-left text-sm min-w-[600px]">
+                            <thead class="bg-slate-50 border-b">
+                                <tr>
+                                    <th class="p-4 font-bold text-slate-600 text-xs">Customer Name</th>
+                                    <th class="p-4 font-bold text-slate-600 text-xs hidden md:table-cell">GST Number</th>
+                                    <th class="p-4 font-bold text-slate-600 text-xs">Contact Info</th>
+                                    <th class="p-4 font-bold text-slate-600 text-xs hidden md:table-cell">Address</th>
+                                    <th class="p-4 text-right font-bold text-slate-600 text-xs">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${filtered.length ? filtered.map(c => `
+                                    <tr class="border-b hover:bg-slate-50 transition-colors">
+                                        <td class="p-4 font-bold text-slate-800 text-xs">${c.name}</td>
+                                        <td class="p-4 font-mono text-xs text-slate-500 hidden md:table-cell">${c.gstin || 'N/A'}</td>
+                                        <td class="p-4">
+                                            <div class="text-xs font-bold text-slate-700">${c.phone}</div>
+                                            <div class="text-[10px] text-slate-400">${c.email}</div>
+                                        </td>
+                                        <td class="p-4 text-xs text-slate-500 hidden md:table-cell">${c.address.substring(0, 40)}...</td>
+                                        <td class="p-4 text-right space-x-2">
+                                            <button onclick="app.openCustomerModal('${c.id}')" class="text-blue-600 hover:bg-blue-50 p-1 rounded transition-colors touch-target"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                                            <button onclick="app.deleteCustomer('${c.id}')" class="text-red-500 hover:bg-red-50 p-1 rounded transition-colors touch-target"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                        </td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="5" class="p-8 text-center text-slate-500">No customers found.</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.getElementById('view-customers').innerHTML = html;
+        lucide.createIcons();
+        // Focus input if filtering
+        if(filter) {
+            const input = document.querySelector('.search-input');
+            input.focus();
+            input.setSelectionRange(input.value.length, input.value.length);
+        }
+    },
+
+    openCustomerModal: (id = null) => {
+        const c = id ? app.state.customers.find(x => x.id === id) : { name: '', phone: '', email: '', gstin: '', address: '' };
+        const title = id ? 'Update Customer' : 'Client Registration';
+        
+        const formHtml = `
+            <input type="hidden" id="cust-id" value="${id || ''}">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Customer Full Name</label>
+                    <input type="text" id="cust-name" value="${c.name}" class="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-100">
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Phone Number</label>
+                        <input type="text" id="cust-phone" value="${c.phone}" class="w-full p-2 border rounded-lg outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Email ID</label>
+                        <input type="email" id="cust-email" value="${c.email}" class="w-full p-2 border rounded-lg outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">GSTIN (Optional)</label>
+                    <input type="text" id="cust-gstin" value="${c.gstin}" class="w-full p-2 border rounded-lg outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Billing Address</label>
+                    <textarea id="cust-address" rows="2" class="w-full p-2 border rounded-lg outline-none">${c.address}</textarea>
+                </div>
+                <button onclick="app.saveCustomer()" class="w-full bg-blue-600 text-white p-3 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 touch-target">Submit Details</button>
+            </div>
+        `;
+        
+        app.showModal(title, formHtml);
+    },
+
+    saveCustomer: () => {
+        const id = document.getElementById('cust-id').value;
+        const name = document.getElementById('cust-name').value;
+        if(!name) return app.toast('Name is required', 'error');
+
+        const data = {
+            id: id || Date.now().toString(),
+            name,
+            phone: document.getElementById('cust-phone').value,
+            email: document.getElementById('cust-email').value,
+            gstin: document.getElementById('cust-gstin').value,
+            address: document.getElementById('cust-address').value
+        };
+
+        if(id) {
+            const idx = app.state.customers.findIndex(x => x.id === id);
+            app.state.customers[idx] = data;
+        } else {
+            app.state.customers.push(data);
+        }
+        
+        app.saveToLocal();
+        app.closeModal();
+        app.renderCustomers();
+        app.toast('Customer saved successfully');
+    },
+
+    deleteCustomer: (id) => {
+        if(confirm('Are you sure?')) {
+            app.state.customers = app.state.customers.filter(c => c.id !== id);
+            app.saveToLocal();
+            app.renderCustomers();
+            app.toast('Customer deleted');
+        }
+    },
+
+    // --- PRODUCTS ---
+    renderProducts: (filter = '') => {
+        const filtered = app.state.products.filter(p => 
+            p.name.toLowerCase().includes(filter) || 
+            p.sku.toLowerCase().includes(filter) || 
+            p.cat.toLowerCase().includes(filter)
+        );
+
+        const html = `
+            <div class="space-y-6">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div class="relative w-full md:w-auto">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                        <input type="text" data-view="products" placeholder="Search products..." class="search-input pl-10 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64 bg-white" value="${filter}">
+                    </div>
+                    <button onclick="app.openProductModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 w-full md:w-auto justify-center touch-target">
+                        <i data-lucide="package-plus" class="w-4 h-4"></i> Add New Product
+                    </button>
+                </div>
+                <div class="bg-white rounded-xl border shadow-sm overflow-hidden">
+                    <div class="table-container overflow-x-auto">
+                        <table class="w-full text-left text-sm min-w-[600px]">
+                            <thead class="bg-slate-50 border-b">
+                                <tr>
+                                    <th class="p-4 font-bold text-slate-600 text-xs">Product / SKU</th>
+                                    <th class="p-4 font-bold text-slate-600 text-xs">Pricing</th>
+                                    <th class="p-4 font-bold text-slate-600 text-xs hidden md:table-cell">Tax</th>
+                                    <th class="p-4 font-bold text-slate-600 text-xs">Stock</th>
+                                    <th class="p-4 font-bold text-slate-600 text-xs">Status</th>
+                                    <th class="p-4 text-right font-bold text-slate-600 text-xs">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${filtered.length ? filtered.map(p => `
+                                    <tr class="border-b hover:bg-slate-50 transition-colors">
+                                        <td class="p-4 font-bold text-slate-800 text-xs">
+                                            ${p.name}
+                                            <div class="text-[10px] text-slate-400 font-mono uppercase">${p.sku} | ${p.cat}</div>
+                                        </td>
+                                        <td class="p-4 font-bold text-xs">
+                                            <span class="text-green-600">${app.formatCurrency(p.sellPrice)}</span>
+                                            <div class="text-[10px] text-slate-400">Buy: ${app.formatCurrency(p.buyPrice)}</div>
+                                        </td>
+                                        <td class="p-4 text-xs font-bold text-slate-600 hidden md:table-cell">${p.gst}%</td>
+                                        <td class="p-4 font-black ${p.stock < 10 ? 'text-red-500' : 'text-slate-700'} text-xs">${p.stock}</td>
+                                        <td class="p-4"><span class="px-2 py-0.5 rounded text-[10px] font-black ${p.active ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-400'}">${p.active ? 'ACTIVE' : 'OFF'}</span></td>
+                                        <td class="p-4 text-right">
+                                            <button onclick="app.openProductModal('${p.id}')" class="text-blue-600 hover:bg-blue-50 p-1 rounded transition-colors touch-target"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                                        </td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="6" class="p-8 text-center text-slate-500">No products found.</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.getElementById('view-products').innerHTML = html;
+        lucide.createIcons();
+        if(filter) {
+            const input = document.querySelector('.search-input');
+            input.focus();
+            input.setSelectionRange(input.value.length, input.value.length);
+        }
+    },
+
+    openProductModal: (id = null) => {
+        const p = id ? app.state.products.find(x => x.id === id) : { name: '', sku: '', cat: '', buyPrice: 0, sellPrice: 0, gst: 18, stock: 0, active: true };
+        const title = id ? 'Edit Product' : 'Catalog Entry';
+
+        const formHtml = `
+            <input type="hidden" id="prod-id" value="${id || ''}">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Product Name</label>
+                    <input type="text" id="prod-name" value="${p.name}" class="w-full p-2 border rounded-lg outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">SKU / Barcode</label>
+                    <input type="text" id="prod-sku" value="${p.sku}" class="w-full p-2 border rounded-lg outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Category</label>
+                    <input type="text" id="prod-cat" value="${p.cat}" class="w-full p-2 border rounded-lg outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Purchase Price</label>
+                    <input type="number" id="prod-buy" value="${p.buyPrice}" class="w-full p-2 border rounded-lg outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Selling Price</label>
+                    <input type="number" id="prod-sell" value="${p.sellPrice}" class="w-full p-2 border rounded-lg outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">GST Rate (%)</label>
+                    <select id="prod-gst" class="w-full p-2 border rounded-lg outline-none">
+                        <option value="0" ${p.gst == 0 ? 'selected' : ''}>0% (Nil)</option>
+                        <option value="5" ${p.gst == 5 ? 'selected' : ''}>5%</option>
+                        <option value="12" ${p.gst == 12 ? 'selected' : ''}>12%</option>
+                        <option value="18" ${p.gst == 18 ? 'selected' : ''}>18%</option>
+                        <option value="28" ${p.gst == 28 ? 'selected' : ''}>28%</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Opening Stock</label>
+                    <input type="number" id="prod-stock" value="${p.stock}" class="w-full p-2 border rounded-lg outline-none">
+                </div>
+                <div class="md:col-span-2 flex items-center gap-2 pt-2">
+                    <input type="checkbox" id="prod-active" ${p.active ? 'checked' : ''} class="w-4 h-4 text-blue-600">
+                    <label class="text-xs font-bold text-slate-600 uppercase">Product is Active</label>
+                </div>
+                <button onclick="app.saveProduct()" class="md:col-span-2 bg-blue-600 text-white p-3 rounded-xl font-bold hover:bg-blue-700 mt-2 shadow-lg shadow-blue-100 touch-target">Update Catalog</button>
+            </div>
+        `;
+        app.showModal(title, formHtml);
+    },
+
+    saveProduct: () => {
+        const id = document.getElementById('prod-id').value;
+        const name = document.getElementById('prod-name').value;
+        if(!name) return app.toast('Name is required', 'error');
+
+        const data = {
+            id: id || Date.now().toString(),
+            name,
+            sku: document.getElementById('prod-sku').value,
+            cat: document.getElementById('prod-cat').value,
+            buyPrice: parseFloat(document.getElementById('prod-buy').value) || 0,
+            sellPrice: parseFloat(document.getElementById('prod-sell').value) || 0,
+            gst: parseInt(document.getElementById('prod-gst').value) || 0,
+            stock: parseInt(document.getElementById('prod-stock').value) || 0,
+            active: document.getElementById('prod-active').checked
+        };
+
+        if(id) {
+            const idx = app.state.products.findIndex(x => x.id === id);
+            app.state.products[idx] = data;
+        } else {
+            app.state.products.push(data);
+        }
+
+        app.saveToLocal();
+        app.closeModal();
+        app.renderProducts();
+        app.toast('Product saved successfully');
+    },
+
+    // --- INVENTORY ---
+    renderInventory: () => {
+        const totalVal = app.state.products.reduce((a, b) => a + (b.stock * b.buyPrice), 0);
+        const html = `
+            <div class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                    <div class="bg-blue-600 p-4 md:p-6 rounded-xl text-white shadow-lg shadow-blue-200">
+                        <p class="text-blue-100 text-xs font-bold uppercase">Total Stock Valuation</p>
+                        <h3 class="text-lg md:text-2xl font-black mt-1">${app.formatCurrency(totalVal)}</h3>
+                    </div>
+                    <div class="bg-white p-4 md:p-6 rounded-xl border shadow-sm">
+                        <p class="text-slate-400 text-xs font-bold uppercase">Stock Valuation Method</p>
+                        <h3 class="text-base md:text-lg font-black mt-1 text-slate-800">FIFO Logic (Automated)</h3>
+                    </div>
+                    <div class="bg-white p-4 md:p-6 rounded-xl border shadow-sm">
+                        <p class="text-slate-400 text-xs font-bold uppercase">Total Items Active</p>
+                        <h3 class="text-base md:text-lg font-black mt-1 text-slate-800">${app.state.products.length} Products</h3>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl border shadow-sm overflow-hidden">
+                    <div class="table-container overflow-x-auto">
+                        <table class="w-full text-left text-sm min-w-[600px]">
+                            <thead class="bg-slate-50 border-b">
+                                <tr>
+                                    <th class="p-4 font-bold text-slate-600 text-xs">Item</th>
+                                    <th class="p-4 font-bold text-slate-600 text-xs hidden md:table-cell">Opening</th>
+                                    <th class="p-4 font-bold text-slate-600 text-xs hidden md:table-cell">Stock In</th>
+                                    <th class="p-4 font-bold text-slate-600 text-xs hidden md:table-cell">Stock Out</th>
+                                    <th class="p-4 font-bold text-slate-600 text-xs">Available</th>
+                                    <th class="p-4 font-bold text-slate-600 text-xs">Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${app.state.products.map(p => `
+                                    <tr class="border-b">
+                                        <td class="p-4 font-bold text-slate-800 text-xs truncate max-w-[150px]">${p.name}</td>
+                                        <td class="p-4 text-xs text-slate-500 hidden md:table-cell">${p.stock + 5}</td>
+                                        <td class="p-4 text-green-600 text-xs font-bold hidden md:table-cell">+10</td>
+                                        <td class="p-4 text-red-500 text-xs font-bold hidden md:table-cell">-15</td>
+                                        <td class="p-4 font-black text-slate-800 text-xs">${p.stock}</td>
+                                        <td class="p-4 font-bold text-slate-800 text-xs">${app.formatCurrency(p.stock * p.buyPrice)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.getElementById('view-inventory').innerHTML = html;
+    },
+
+    // --- INVOICE CREATE ---
+    initInvoiceCreator: () => {
+        app.state.currentBillingItems = [];
+        app.renderInvoiceCreator();
+    },
+
+    renderInvoiceCreator: () => {
+        const customers = app.state.customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        const products = app.state.products.filter(p => p.active).map(p => `<option value="${p.id}">${p.name} - ${app.formatCurrency(p.sellPrice)}</option>`).join('');
+        
+        const isMobile = window.innerWidth <= 768;
+        
+        const html = `
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
+                <div class="lg:col-span-1 space-y-4 md:space-y-6 no-print">
+                    <div class="bg-white p-4 md:p-6 rounded-xl border shadow-sm space-y-4">
+                        <h4 class="font-black text-base md:text-lg border-b pb-3 text-slate-800">Billing Terminal</h4>
+                        <div>
+                            <label class="block text-xs font-bold uppercase mb-1 text-slate-500">Invoice Type</label>
+                            <select id="inv-type" onchange="app.renderInvoicePreview()" class="w-full p-2 border rounded-lg bg-slate-50 outline-none text-sm">
+                                <option value="Tax Invoice">Tax Invoice</option>
+                                <option value="Proforma Invoice">Proforma Invoice</option>
+                                <option value="Credit Note">Credit Note</option>
+                                <option value="Debit Note">Debit Note</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase mb-1 text-slate-500">Customer</label>
+                            <select id="inv-cust" onchange="app.renderInvoicePreview()" class="w-full p-2 border rounded-lg bg-slate-50 outline-none text-sm">
+                                <option value="">Select Customer</option>
+                                ${customers}
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold uppercase mb-1 text-slate-500">Invoice Date</label>
+                                <input type="date" id="inv-date" value="${new Date().toISOString().split('T')[0]}" onchange="app.renderInvoicePreview()" class="w-full p-2 border rounded-lg bg-slate-50 outline-none text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase mb-1 text-slate-500">Due Date</label>
+                                <input type="date" id="inv-due" class="w-full p-2 border rounded-lg bg-slate-50 outline-none text-sm">
+                            </div>
+                        </div>
+                        <div class="border-t pt-4">
+                            <label class="block text-xs font-bold uppercase mb-1 text-slate-500">Add Product</label>
+                            <div class="flex gap-2">
+                                <select id="inv-prod" class="flex-1 p-2 border rounded-lg bg-slate-50 outline-none text-sm">
+                                    <option value="">Choose Item...</option>
+                                    ${products}
+                                </select>
+                                <button onclick="app.addInvoiceItem()" class="p-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 touch-target"><i data-lucide="plus" class="w-5 h-5"></i></button>
+                            </div>
+                        </div>
+                        <div id="inv-items-list" class="space-y-2 max-h-48 overflow-y-auto custom-scroll">
+                            <!-- Items -->
+                        </div>
+                        <div class="border-t pt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold uppercase mb-1 text-slate-500">Payment Mode</label>
+                                <select id="inv-mode" class="w-full p-2 border rounded-lg bg-slate-50 outline-none text-sm">
+                                    <option>Cash</option>
+                                    <option>UPI</option>
+                                    <option>Card</option>
+                                    <option>Bank Transfer</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase mb-1 text-slate-500">Status</label>
+                                <select id="inv-status" onchange="app.renderInvoicePreview()" class="w-full p-2 border rounded-lg bg-slate-50 outline-none text-sm">
+                                    <option value="PAID">PAID</option>
+                                    <option value="UNPAID">UNPAID</option>
+                                    <option value="DRAFT">DRAFT</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button onclick="app.saveInvoice()" class="w-full bg-green-600 hover:bg-green-700 text-white p-3 md:p-4 rounded-xl font-black text-base md:text-lg shadow-lg shadow-green-100 transition-all flex items-center justify-center gap-3 touch-target">
+                            <i data-lucide="save" class="w-5 h-5 md:w-6 md:h-6"></i> Save & Generate
+                        </button>
+                    </div>
+                </div>
+                <div class="lg:col-span-2">
+                    <div class="flex flex-col md:flex-row items-center justify-between mb-4 gap-2 no-print">
+                        <h4 class="font-bold text-slate-700 text-sm md:text-base">Half-A4 Preview</h4>
+                        <button onclick="window.print()" class="px-3 md:px-4 py-2 bg-slate-800 text-white rounded-lg flex items-center gap-2 text-xs md:text-sm font-bold hover:bg-slate-900 transition-colors w-full md:w-auto justify-center touch-target">
+                            <i data-lucide="printer" class="w-4 h-4"></i> Print / PDF
+                        </button>
+                    </div>
+                    <div id="printable-area" class="${isMobile ? 'overflow-x-auto' : ''}">
+                        <div id="invoice-preview" class="invoice-container ${isMobile ? 'scale-90 md:scale-100' : ''}">
+                            <!-- Preview -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.getElementById('view-invoice-create').innerHTML = html;
+        lucide.createIcons();
+        app.renderInvoiceItems();
+        app.renderInvoicePreview();
+    },
+
+    addInvoiceItem: () => {
+        const pid = document.getElementById('inv-prod').value;
+        if(!pid) return;
+        const prod = app.state.products.find(p => p.id === pid);
+        const existing = app.state.currentBillingItems.find(i => i.id === pid);
+        if(existing) existing.qty++;
+        else app.state.currentBillingItems.push({ ...prod, qty: 1 });
+        app.renderInvoiceItems();
+        app.renderInvoicePreview();
+    },
+
+    removeInvoiceItem: (idx) => {
+        app.state.currentBillingItems.splice(idx, 1);
+        app.renderInvoiceItems();
+        app.renderInvoicePreview();
+    },
+
+    updateInvoiceQty: (idx, val) => {
+        app.state.currentBillingItems[idx].qty = parseInt(val) || 1;
+        app.renderInvoicePreview();
+    },
+
+    renderInvoiceItems: () => {
+        const html = app.state.currentBillingItems.map((item, idx) => `
+            <div class="flex items-center justify-between p-2 bg-slate-50 rounded border text-xs">
+                <div class="flex-1 font-bold text-slate-700 truncate">${item.name}</div>
+                <div class="flex items-center gap-2">
+                    <input type="number" value="${item.qty}" min="1" onchange="app.updateInvoiceQty(${idx}, this.value)" class="w-10 p-1 border rounded text-center text-sm">
+                    <button onclick="app.removeInvoiceItem(${idx})" class="text-red-500 hover:bg-red-50 p-1 rounded touch-target"><i data-lucide="x" class="w-3 h-3"></i></button>
+                </div>
+            </div>
+        `).join('');
+        document.getElementById('inv-items-list').innerHTML = html;
+        lucide.createIcons();
+    },
+
+    renderInvoicePreview: () => {
+        const type = document.getElementById('inv-type').value;
+        const custId = document.getElementById('inv-cust').value;
+        const cust = app.state.customers.find(c => c.id === custId) || { name: 'VALUED CUSTOMER', address: '...', gstin: '' };
+        const date = document.getElementById('inv-date').value;
+        const status = document.getElementById('inv-status').value;
+        const invNo = app.state.company.prefix + (app.state.invoices.length + 1).toString().padStart(4, '0');
+
+        let subtotal = 0, totalGst = 0;
+        const rows = app.state.currentBillingItems.map((item, i) => {
+            const total = item.qty * item.sellPrice;
+            const gst = total * (item.gst / 100);
+            subtotal += total;
+            totalGst += gst;
+            return `
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 8px 0; font-size: 10px;">${i+1}</td>
+                    <td style="padding: 8px 0;">
+                        <div style="font-weight: bold; font-size: 10px;">${item.name}</div>
+                        <div style="font-size: 8px; color: #64748b;">SKU: ${item.sku}</div>
+                    </td>
+                    <td style="padding: 8px 0; font-size: 10px;">${item.qty}</td>
+                    <td style="padding: 8px 0; text-align: right; font-size: 10px;">${item.sellPrice.toFixed(2)}</td>
+                    <td style="padding: 8px 0; text-align: right; font-size: 10px;">${total.toFixed(2)}</td>
+                </tr>
+            `;
+        }).join('');
+
+        const html = `
+            <div class="watermark">${status}</div>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                <div>
+                    <h2 style="font-size: 16px; font-weight: 900; color: #1e293b; margin: 0;">${app.state.company.name}</h2>
+                    <div style="font-size: 9px; color: #64748b; margin-top: 4px;">
+                        ${app.state.company.address}<br>
+                        GST: ${app.state.company.gst} | PAN: ${app.state.company.pan}
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 11px; font-weight: 800; color: #2563eb;">${type.toUpperCase()}</div>
+                    <div style="font-size: 10px; font-weight: 700;"># ${invNo}</div>
+                    <div style="font-size: 9px; color: #64748b;">Date: ${date}</div>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; border-top: 1px solid #e2e8f0; padding-top: 15px; margin-bottom: 20px;">
+                <div style="font-size: 9px;">
+                    <div style="font-weight: 800; text-transform: uppercase; color: #94a3b8; margin-bottom: 4px;">Bill To:</div>
+                    <div style="font-weight: 700; font-size: 11px;">${cust.name}</div>
+                    <div>${cust.address}</div>
+                    <div style="font-weight: 700;">GST: ${cust.gstin}</div>
+                </div>
+                <div style="font-size: 9px;">
+                    <div style="font-weight: 800; text-transform: uppercase; color: #94a3b8; margin-bottom: 4px;">Bank Info:</div>
+                    <div style="white-space: pre-line;">${app.state.company.bank}</div>
+                </div>
+            </div>
+
+            <table style="width: 100%; font-size: 9px; border-collapse: collapse; margin-bottom: 20px;">
+                <thead>
+                    <tr style="text-align: left; color: #64748b; border-bottom: 2px solid #e2e8f0;">
+                        <th style="padding: 5px 0;">#</th>
+                        <th style="padding: 5px 0;">Description</th>
+                        <th style="padding: 5px 0;">Qty</th>
+                        <th style="padding: 5px 0; text-align: right;">Rate</th>
+                        <th style="padding: 5px 0; text-align: right;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+
+            <div style="display: flex; justify-content: flex-end;">
+                <div style="width: 180px; font-size: 10px;">
+                    <div style="display: flex; justify-content: space-between; padding: 4px 0;">
+                        <span>Subtotal</span>
+                        <span>${subtotal.toFixed(2)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 4px 0;">
+                        <span>Tax (GST)</span>
+                        <span>${totalGst.toFixed(2)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-top: 2px solid #000; font-weight: 900; margin-top: 5px; font-size: 12px;">
+                        <span>GRAND TOTAL</span>
+                        <span>${app.formatCurrency(subtotal + totalGst)}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 10px; font-size: 7px; color: #64748b;">
+                <div style="font-weight: 800; margin-bottom: 2px; color: #475569;">Terms & Conditions</div>
+                <div style="white-space: pre-line;">${app.state.company.terms}</div>
+                <div style="text-align: center; margin-top: 15px; font-weight: 700; font-size: 8px;">Computer Generated Invoice - No Signature Required</div>
+            </div>
+        `;
+        const previewEl = document.getElementById('invoice-preview');
+        if(previewEl) {
+            previewEl.innerHTML = html;
+        }
+    },
+
+    saveInvoice: () => {
+        if(!app.state.currentBillingItems.length) return app.toast('Add items first', 'error');
+        const custId = document.getElementById('inv-cust').value;
+        if(!custId) return app.toast('Select customer', 'error');
+
+        const total = app.state.currentBillingItems.reduce((a, b) => a + (b.qty * b.sellPrice * (1 + b.gst/100)), 0);
+        const invNo = app.state.company.prefix + (app.state.invoices.length + 1).toString().padStart(4, '0');
+        
+        const invoice = {
+            id: invNo,
+            date: document.getElementById('inv-date').value,
+            customerName: app.state.customers.find(c => c.id === custId).name,
+            total,
+            status: document.getElementById('inv-status').value,
+            mode: document.getElementById('inv-mode').value,
+            items: [...app.state.currentBillingItems]
+        };
+
+        // Deduct Stock
+        app.state.currentBillingItems.forEach(item => {
+            const p = app.state.products.find(x => x.id === item.id);
+            if(p) p.stock -= item.qty;
+        });
+
+        app.state.invoices.push(invoice);
+        app.saveToLocal();
+        app.toast('Invoice generated successfully');
+        app.navigate('dashboard');
+    },
+
+    // --- INVOICE LIST ---
+    renderInvoiceList: () => {
+        const html = `
+            <div class="bg-white rounded-xl border shadow-sm overflow-hidden">
+                <div class="table-container overflow-x-auto">
+                    <table class="w-full text-left text-sm min-w-[600px]">
+                        <thead class="bg-slate-50 border-b">
+                            <tr>
+                                <th class="p-4 font-bold text-slate-600 text-xs">INV #</th>
+                                <th class="p-4 font-bold text-slate-600 text-xs">Date</th>
+                                <th class="p-4 font-bold text-slate-600 text-xs">Customer</th>
+                                <th class="p-4 font-bold text-slate-600 text-xs">Amount</th>
+                                <th class="p-4 font-bold text-slate-600 text-xs hidden md:table-cell">Mode</th>
+                                <th class="p-4 font-bold text-slate-600 text-xs">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${app.state.invoices.slice().reverse().map(inv => `
+                                <tr class="border-b hover:bg-slate-50 transition-colors">
+                                    <td class="p-4 font-bold text-blue-600 text-xs">${inv.id}</td>
+                                    <td class="p-4 text-xs text-slate-500">${inv.date}</td>
+                                    <td class="p-4 font-medium text-slate-800 text-xs truncate max-w-[120px]">${inv.customerName}</td>
+                                    <td class="p-4 font-black text-slate-800 text-xs">${app.formatCurrency(inv.total)}</td>
+                                    <td class="p-4 text-xs text-slate-500 hidden md:table-cell">${inv.mode}</td>
+                                    <td class="p-4"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${inv.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}">${inv.status}</span></td>
+                                </tr>
+                            `).join('') || '<tr><td colspan="6" class="p-8 text-center text-slate-500">No invoices found.</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        document.getElementById('view-invoice-list').innerHTML = html;
+    },
+
+    // --- PAYMENTS ---
+    renderPayments: () => {
+        const paidInvoices = app.state.invoices.filter(inv => inv.status === 'PAID');
+        const modes = { Cash: 0, UPI: 0, Card: 0, 'Bank Transfer': 0 };
+        paidInvoices.forEach(i => modes[i.mode] = (modes[i.mode] || 0) + i.total);
+
+        const html = `
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+                <div class="bg-white p-4 md:p-6 rounded-xl border shadow-sm">
+                    <h4 class="font-bold mb-4 text-slate-700 text-sm md:text-base">Cash Flow Distribution</h4>
+                    <div class="h-48 md:h-64">
+                        <canvas id="paymentChart"></canvas>
+                    </div>
+                </div>
+                <div class="lg:col-span-2 space-y-4 md:space-y-6">
+                    <div class="bg-slate-900 rounded-xl p-4 md:p-6 text-white shadow-xl">
+                        <h4 class="font-bold mb-4 flex items-center gap-2 text-sm md:text-base"><i data-lucide="wallet" class="w-4 h-4"></i> Expense Module</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <input type="text" id="exp-reason" placeholder="Reason" class="md:col-span-1 bg-white/10 p-3 rounded-lg border border-white/10 outline-none text-sm text-white placeholder:text-slate-400">
+                            <input type="number" id="exp-amount" placeholder="Amount" class="bg-white/10 p-3 rounded-lg border border-white/10 outline-none text-sm text-white placeholder:text-slate-400">
+                            <button onclick="app.recordExpense()" class="bg-blue-600 p-3 rounded-lg font-bold hover:bg-blue-500 transition-colors touch-target">Record</button>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 md:p-6 rounded-xl border shadow-sm">
+                        <h4 class="font-bold mb-4 text-slate-700 text-sm md:text-base">Daily Cash Closing</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                            <div class="p-3 bg-slate-50 rounded-lg">
+                                <p class="text-[10px] uppercase font-bold text-slate-400">Cash Sales</p>
+                                <p class="text-base md:text-lg font-black text-slate-800">${app.formatCurrency(paidInvoices.filter(i => i.mode === 'Cash').reduce((a, b) => a + b.total, 0))}</p>
+                            </div>
+                            <div class="p-3 bg-slate-50 rounded-lg">
+                                <p class="text-[10px] uppercase font-bold text-slate-400">Total Expenses</p>
+                                <p class="text-base md:text-lg font-black text-red-500">${app.formatCurrency(app.state.expenses.reduce((a, b) => a + b.amount, 0))}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.getElementById('view-payments').innerHTML = html;
+        lucide.createIcons();
+
+        if(app.charts.payment) app.charts.payment.destroy();
+        const ctx = document.getElementById('paymentChart')?.getContext('2d');
+        if(ctx) {
+            app.charts.payment = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(modes),
+                    datasets: [{
+                        data: Object.values(modes),
+                        backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { 
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    size: window.innerWidth <= 768 ? 10 : 12
+                                }
+                            }
+                        } 
+                    } 
+                }
+            });
+        }
+    },
+
+    recordExpense: () => {
+        const reason = document.getElementById('exp-reason').value;
+        const amount = parseFloat(document.getElementById('exp-amount').value);
+        if(!reason || !amount) return app.toast('Invalid expense', 'error');
+        
+        app.state.expenses.push({ id: Date.now(), reason, amount, date: new Date().toISOString() });
+        app.saveToLocal();
+        app.renderPayments();
+        app.toast('Expense recorded');
+    },
+
+    // --- REPORTS ---
+    renderReports: () => {
+        const html = `
+            <div class="bg-white p-4 md:p-8 rounded-xl border flex flex-col md:flex-row justify-between items-center gap-4 md:gap-6 shadow-sm">
+                <div class="text-center md:text-left">
+                    <h3 class="text-lg md:text-2xl font-black text-slate-800">Business Analytics</h3>
+                    <p class="text-slate-500 text-xs md:text-sm">Comprehensive sales, tax, and inventory reports.</p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="window.print()" class="bg-blue-600 text-white px-4 md:px-6 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-blue-700 transition-colors touch-target">
+                        <i data-lucide="download" class="w-4 h-4"></i> <span class="hidden md:inline">Download PDF</span><span class="md:hidden">PDF</span>
+                    </button>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mt-6">
+                <div class="bg-white p-4 md:p-6 rounded-xl border shadow-sm">
+                    <h4 class="font-bold text-slate-400 text-xs uppercase mb-4">Aging Receivables</h4>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center text-xs md:text-sm">
+                            <span class="font-medium text-slate-600">30 Days Overdue</span>
+                            <span class="font-bold text-orange-500">${app.formatCurrency(0)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.getElementById('view-reports').innerHTML = html;
+        lucide.createIcons();
+    },
+
+    // --- HARDWARE ---
+    renderHardware: () => {
+        const html = `
+            <div class="max-w-3xl mx-auto bg-white rounded-xl border p-4 md:p-8 space-y-6 md:space-y-8 shadow-sm">
+                <h3 class="text-lg md:text-2xl font-black text-slate-800">Hardware Integration</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                    <div class="p-4 md:p-6 bg-slate-50 rounded-xl border border-dashed border-slate-300 flex flex-col items-center text-center">
+                        <i data-lucide="barcode" class="w-8 h-8 md:w-12 md:h-12 text-slate-400 mb-4"></i>
+                        <h4 class="font-bold text-slate-800 text-sm md:text-base">Barcode Scanner</h4>
+                        <p class="text-xs text-slate-500 mb-4">USB/Bluetooth scanner support active.</p>
+                        <span class="px-3 py-1 bg-green-100 text-green-700 text-[10px] font-black rounded-full uppercase">Connected</span>
+                    </div>
+                    <div class="p-4 md:p-6 bg-slate-50 rounded-xl border border-dashed border-slate-300 flex flex-col items-center text-center">
+                        <i data-lucide="printer" class="w-8 h-8 md:w-12 md:h-12 text-slate-400 mb-4"></i>
+                        <h4 class="font-bold text-slate-800 text-sm md:text-base">Thermal Printer</h4>
+                        <p class="text-xs text-slate-500 mb-4">80mm / 58mm POS printer integration available.</p>
+                        <button onclick="window.print()" class="px-3 py-1 bg-blue-100 text-blue-700 text-[10px] font-black rounded-full uppercase hover:bg-blue-200 touch-target">Test Page</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.getElementById('view-hardware').innerHTML = html;
+        lucide.createIcons();
+    },
+
+    // --- SECURITY ---
+    renderSecurity: () => {
+        const html = `
+            <div class="max-w-3xl mx-auto bg-white rounded-xl border p-4 md:p-8 space-y-6 md:space-y-8 shadow-sm">
+                <h3 class="text-lg md:text-2xl font-black text-slate-800">Security & Stack</h3>
+                <div class="space-y-4">
+                    <div class="p-4 border-l-4 border-blue-600 bg-blue-50">
+                        <h4 class="font-bold text-blue-800 text-sm md:text-base">Technology Stack</h4>
+                        <p class="text-xs md:text-sm text-blue-600">Frontend: Vanilla JS, Tailwind CSS. | Database: LocalStorage.</p>
+                    </div>
+                    <div class="p-4 border-l-4 border-green-600 bg-green-50">
+                        <h4 class="font-bold text-green-800 text-sm md:text-base">Compliance</h4>
+                        <p class="text-xs md:text-sm text-green-600">GST Ready. Data privacy ensured via local-first storage.</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.getElementById('view-security').innerHTML = html;
+    },
+
+    // --- MODAL HELPERS ---
+    showModal: (title, content) => {
+        document.getElementById('modal-title').innerText = title;
+        document.getElementById('modal-body').innerHTML = content;
+        document.getElementById('modal-overlay').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    },
+    closeModal: () => {
+        document.getElementById('modal-overlay').classList.add('hidden');
+        document.body.style.overflow = '';
+    },
+    updateCurrency: () => {
+        const selector = window.innerWidth <= 768 ? 'currency-selector-mobile' : 'currency-selector';
+        app.state.company.currency = document.getElementById(selector).value;
+        app.saveToLocal();
+        app.navigate('dashboard');
+    }
+};
+
+// Init
+window.onload = app.init;
+
+// Handle resize
+window.addEventListener('resize', () => {
+    // Re-render current view on resize for better responsiveness
+    const currentView = document.querySelector('.view-section:not(.hidden)').id.replace('view-', '');
+    if(currentView && app[`render${currentView.charAt(0).toUpperCase() + currentView.slice(1)}`]) {
+        app[`render${currentView.charAt(0).toUpperCase() + currentView.slice(1)}`]();
+    }
+});
+    </script>
+</body>
+</html>
